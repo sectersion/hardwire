@@ -4,7 +4,7 @@
 **From logic to silicon.**
 
 ## About
-**Hardwire** is a high-intensity silicon hackathon designed to bridge the gap between abstract code and physical hardware. We guide the next generation of engineers through the entire semiconductor pipeline—from writing SystemVerilog and running timing simulations to designing custom PCBs and taping out real ASICs.
+**Hardwire** is a high-intensity silicon YSWS designed to bridge the gap between abstract code and physical hardware. Many people think chipmaking is out of reach, we disagree. We guide the next generation of engineers through the entire semiconductor pipeline.
 
 ## The YSWS Pipeline
 Hardwire operates on a "You Ship, We Ship" model, but with a rigorous engineering standard. You "ship" a validated design, and through the support of **Hack Club**, we facilitate the fabrication and shipping of your custom hardware. This is not just a project; it is an end-to-end immersion into the semiconductor manufacturing process.
