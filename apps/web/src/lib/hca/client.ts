@@ -11,6 +11,7 @@ export interface HcaUserInfo {
   preferred_username?: string
   avatar?: string
   birthdate?: string
+  slack_id?: string
   "https://hackclub.com/verification_status"?: string
 }
 
@@ -33,7 +34,7 @@ export function getAuthorizeUrl(state: string, redirect?: string) {
   url.searchParams.set("client_id", clientId)
   url.searchParams.set("redirect_uri", redirectUri)
   url.searchParams.set("response_type", "code")
-  url.searchParams.set("scope", "openid email name profile birthdate address verification_status")
+  url.searchParams.set("scope", "openid profile email name slack_id verification_status")
   url.searchParams.set("state", state)
   if (redirect) {
     url.searchParams.set("redirect", redirect)

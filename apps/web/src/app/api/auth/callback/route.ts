@@ -5,19 +5,26 @@ import { cookies } from "next/headers"
 import { prisma } from "@/lib/db/prisma"
 import { exchangeCode, getUserInfo } from "@/lib/hca/client"
 
+// Defense-in-depth: even though login/route.ts already validates this,
+// re-validate here in case the token was ever signed by another path.
+function sanitizeRedirect(redirect: unknown): string {
+  const fallback = "/dashboard"
+  if (typeof redirect !== "string") return fallback
+  if (!redirect.startsWith("/") || redirect.startsWith("//")) return fallback
+  if (redirect.includes("\\")) return fallback
+  return redirect
+}
+
 function verifyStateToken(token: string): { redirect: string } | null {
   const secret = process.env.STATE_SECRET!
   const [encoded, signature] = token.split(".")
-
   if (!encoded || !signature) return null
-
   const expectedSignature = createHmac("sha256", secret).update(encoded).digest("base64url")
   if (signature !== expectedSignature) return null
-
   try {
     const decoded = JSON.parse(new TextDecoder().decode(decode(encoded)))
     if (Date.now() - decoded.timestamp > 10 * 60 * 1000) return null
-    return { redirect: decoded.redirect }
+    return { redirect: sanitizeRedirect(decoded.redirect) }
   } catch {
     return null
   }
@@ -26,24 +33,19 @@ function verifyStateToken(token: string): { redirect: string } | null {
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
   const state = request.nextUrl.searchParams.get("state")
-
   if (!code || !state) {
     return NextResponse.redirect(new URL("/", request.url))
   }
-
   const stateData = verifyStateToken(state)
   if (!stateData) {
     return NextResponse.redirect(new URL("/", request.url))
   }
-
   try {
     const tokens = await exchangeCode(code)
     const hcaUser = await getUserInfo(tokens.access_token)
-
     let user = await prisma.user.findFirst({
       where: { OR: [{ hcaId: hcaUser.sub }, { email: hcaUser.email }] },
     })
-
     if (user) {
       user = await prisma.user.update({
         where: { id: user.id },
@@ -68,14 +70,12 @@ export async function GET(request: NextRequest) {
         },
       })
     }
-
     const session = await prisma.userSession.create({
       data: {
         userId: user.id,
         expiresAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
       },
     })
-
     const cookieStore = await cookies()
     cookieStore.set("sessionId", session.id, {
       httpOnly: true,
@@ -84,7 +84,6 @@ export async function GET(request: NextRequest) {
       maxAge: 21 * 24 * 60 * 60,
       path: "/",
     })
-
     const redirectTarget = user.onboardComplete ? stateData.redirect : "/onboarding"
     return NextResponse.redirect(new URL(redirectTarget, request.url))
   } catch (error) {
