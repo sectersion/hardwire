@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { Logo } from "@/components/logo";
+import { useTheme } from "@/components/theme-provider";
 
 const ACCENT = "#FF1500";
 
@@ -25,16 +27,6 @@ const tiers = [
   },
 ];
 
-function Logo({ variant, className = "" }) {
-  return (
-    <img
-      src={`/logo/hardwire-${variant}.svg`}
-      alt="hardwire"
-      className={className}
-    />
-  );
-}
-
 async function signInWithHackClub() {
   const res = await fetch("/api/auth/login?redirect=/dashboard");
   const data = await res.json();
@@ -42,27 +34,15 @@ async function signInWithHackClub() {
 }
 
 export default function LandingPage() {
-  const [theme, setTheme] = useState("dark");
+  const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
   const logoVariant = isDark ? "darkmode" : "lightmode";
 
   return (
     <div
       className="min-h-screen transition-colors duration-200"
-      style={{
-        "--bg": isDark ? "#000000" : "#ffffff",
-        "--fg": isDark ? "#ffffff" : "#000000",
-        "--muted": isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
-        backgroundColor: "var(--bg)",
-        color: "var(--fg)",
-      }}
+      style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}
     >
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;800&family=DM+Sans:wght@400;500;700&display=swap');
-        .font-display { font-family: 'Unbounded', sans-serif; }
-        .font-body { font-family: 'DM Sans', sans-serif; }
-      `}</style>
-
       <div className="font-body flex flex-col min-h-screen">
         {/* Sticky nav */}
         <header
@@ -71,7 +51,7 @@ export default function LandingPage() {
         >
           <nav className="h-20 flex items-center px-6 relative">
             <div className="absolute left-1/2 -translate-x-1/2">
-              <Logo variant={logoVariant} className="h-12" />
+              <Logo variant={logoVariant} className="h-12 block" />
             </div>
             <button
               onClick={signInWithHackClub}
@@ -318,7 +298,7 @@ export default function LandingPage() {
 
       {/* Theme toggle - fixed bottom right, follows scroll */}
       <button
-        onClick={() => setTheme(isDark ? "light" : "dark")}
+        onClick={toggleTheme}
         aria-label="Toggle light and dark mode"
         className="fixed bottom-6 right-6 z-50 w-14 h-14 border-2 flex items-center justify-center transition-colors"
         style={{

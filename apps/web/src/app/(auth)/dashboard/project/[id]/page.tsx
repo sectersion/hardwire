@@ -4,11 +4,14 @@ import { getAuthUser } from "@/lib/auth/get-auth-user"
 import { prisma } from "@/lib/db/prisma"
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { EditableProjectHeader } from "@/components/editable-project-header"
 
-const tierLabels: Record<string, { label: string; gradient: string }> = {
-  T1: { label: "T1: Digital Logic", gradient: "from-cyan-500 to-blue-600" },
-  T2: { label: "T2: ASIC Tapeout", gradient: "from-purple-500 to-pink-600" },
-  T3: { label: "T3: Custom Carrier Board", gradient: "from-amber-500 to-orange-600" },
+const ACCENT = "#FF1500"
+
+const tierLabels: Record<string, string> = {
+  T1: "Digital Logic",
+  T2: "ASIC Tapeout",
+  T3: "Custom Carrier Board",
 }
 
 export default async function ProjectPage(props: { params: Promise<{ id: string }> }) {
@@ -24,59 +27,86 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
     notFound()
   }
 
-  const activeTier = project.tiers.find((t) => t.status === "ACTIVE")
-  const completedTiers = project.tiers.filter((t) => t.status === "COMPLETED")
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <Link href="/dashboard" className="text-sm text-muted hover:text-white transition-colors mb-6 inline-block">
+      <Link
+        href="/dashboard"
+        className="text-sm text-[var(--muted)] hover:text-[var(--fg)] transition-colors mb-6 inline-block"
+      >
         &larr; Back to dashboard
       </Link>
 
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">{project.name}</h1>
-          {project.description && (
-            <p className="text-muted mt-2">{project.description}</p>
-          )}
-        </div>
-      </div>
+      <EditableProjectHeader
+        projectId={project.id}
+        initialName={project.name}
+        initialDescription={project.description}
+      />
 
       <div className="space-y-4 mb-12">
         {project.tiers.map((tier) => {
-          const cfg = tierLabels[tier.tier]
+          const label = tierLabels[tier.tier] ?? tier.tier
+          const isLocked = tier.status !== "ACTIVE" && tier.status !== "COMPLETED"
+          const statusText =
+            tier.status === "COMPLETED"
+              ? "Completed"
+              : tier.status === "ACTIVE"
+                ? "In progress"
+                : "Locked"
+
+          const content = (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-10 h-10 border-2 flex items-center justify-center text-sm font-bold shrink-0"
+                  style={{ borderColor: "currentColor" }}
+                >
+                  {tier.tier}
+                </div>
+                <div>
+                  <h3 className="font-display font-bold">
+                    {tier.tier}: {label}
+                  </h3>
+                  <p className="text-sm text-[var(--muted)]">{statusText}</p>
+                </div>
+              </div>
+              {tier.status === "ACTIVE" && (
+                <span className="text-sm font-bold" style={{ color: ACCENT }}>
+                  Continue &rarr;
+                </span>
+              )}
+              {isLocked && (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-40 shrink-0">
+                  <rect x="3" y="11" width="18" height="11" rx="1" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              )}
+            </div>
+          )
+
+          const cardClass = "block border-2 p-6 transition-colors"
+          const cardStyle = {
+            borderColor: "var(--fg)",
+            opacity: isLocked ? 0.4 : 1,
+          }
+
+          // Locked tiers are intentionally NOT links — nothing exists at
+          // that route yet, so making them clickable was causing a 404.
+          if (isLocked) {
+            return (
+              <div key={tier.id} className={cardClass} style={cardStyle}>
+                {content}
+              </div>
+            )
+          }
+
           return (
             <Link
               key={tier.id}
               href={`/dashboard/project/${project.id}/tier/${tier.tier.toLowerCase()}`}
-              className={`block rounded-2xl border p-6 transition-colors ${
-                tier.status === "ACTIVE"
-                  ? "border-blue-500/30 bg-blue-500/5"
-                  : tier.status === "COMPLETED"
-                    ? "border-green-500/30 bg-green-500/5"
-                    : "border-white/10 opacity-50"
-              }`}
+              className={`${cardClass} hover:bg-[var(--fg)] hover:text-[var(--bg)]`}
+              style={cardStyle}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${cfg.gradient} flex items-center justify-center text-sm font-bold`}>
-                    {tier.tier}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">{cfg.label}</h3>
-                    <p className="text-sm text-muted">
-                      {tier.status === "COMPLETED"
-                        ? "Completed"
-                        : tier.status === "ACTIVE"
-                          ? "In progress"
-                          : "Locked"}
-                    </p>
-                  </div>
-                </div>
-                {tier.status === "ACTIVE" && (
-                  <span className="text-sm text-blue-400">Continue &rarr;</span>
-                )}
-              </div>
+              {content}
             </Link>
           )
         })}
@@ -84,22 +114,25 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
 
       {project.submissions.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">Submissions</h2>
+          <h2 className="font-display text-xl font-bold mb-4">Submissions</h2>
           <div className="space-y-3">
             {project.submissions.map((sub) => (
-              <div key={sub.id} className="rounded-xl border border-white/10 p-4">
-                <div className="flex items-center justify-between">
+              <div key={sub.id} className="border-2 p-4" style={{ borderColor: "var(--fg)" }}>
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="font-medium">{sub.title}</p>
-                    <p className="text-sm text-muted">{sub.tier} &middot; {sub.type}</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {sub.tier} &middot; {sub.type}
+                    </p>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full ${
-                    sub.status === "APPROVED"
-                      ? "bg-green-500/10 text-green-400"
-                      : sub.status === "CHANGES_REQUESTED"
-                        ? "bg-amber-500/10 text-amber-400"
-                        : "bg-blue-500/10 text-blue-400"
-                  }`}>
+                  <span
+                    className="text-xs px-3 py-1 border-2 font-bold uppercase tracking-wide shrink-0"
+                    style={{
+                      borderColor:
+                        sub.status === "APPROVED" ? ACCENT : "var(--fg)",
+                      color: sub.status === "APPROVED" ? ACCENT : "var(--fg)",
+                    }}
+                  >
                     {sub.status.toLowerCase().replace("_", " ")}
                   </span>
                 </div>
