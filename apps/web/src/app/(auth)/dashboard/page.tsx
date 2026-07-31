@@ -1,8 +1,10 @@
 export const dynamic = "force-dynamic";
 
+import { PageTransition } from "@/components/page-transition";
 import { getAuthUser } from "@/lib/auth/get-auth-user";
 import { prisma } from "@/lib/db/prisma";
 import { formatTimeAgo } from "@/lib/format-time-ago";
+import { getCachetUser } from "@/lib/cachet";
 import Link from "next/link";
 
 const ACCENT = "#FF1500";
@@ -15,14 +17,19 @@ const tierLabels: Record<string, string> = {
 
 export default async function DashboardPage() {
   const user = await getAuthUser();
-  const projects = await prisma.project.findMany({
-    where: { userId: user.id },
-    include: {
-      tiers: true,
-      submissions: { orderBy: { createdAt: "desc" }, take: 5 },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [projects, cachetUser] = await Promise.all([
+    prisma.project.findMany({
+      where: { userId: user.id },
+      include: {
+        tiers: true,
+        submissions: { orderBy: { createdAt: "desc" }, take: 5 },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    getCachetUser(user.slackUserId),
+  ]);
+
+  const displayName = cachetUser?.displayName || user.firstName;
 
   const tiersCompleted = projects.reduce(
     (sum, p) => sum + p.tiers.filter((t) => t.status === "COMPLETED").length,
@@ -44,12 +51,12 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
-      {/* Header */}
+    <PageTransition>
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
           <h1 className="font-display text-4xl md:text-5xl font-extrabold lowercase leading-none mb-2">
-            welcome, {user.firstName.toLowerCase()}
+            welcome, {displayName.toLowerCase()}
             <span style={{ color: ACCENT }}>.</span>
           </h1>
           <p className="text-sm text-[var(--muted)]">
@@ -65,7 +72,6 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 border-2 border-[var(--fg)] mb-10">
         {stats.map((stat, i) => (
           <div
@@ -88,7 +94,6 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Projects */}
       {projects.length === 0 ? (
         <div className="border-2 border-[var(--fg)] p-12 text-center">
           <h2 className="font-display text-xl font-bold mb-2 lowercase">
@@ -144,6 +149,7 @@ export default async function DashboardPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

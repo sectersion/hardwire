@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
+import { PageTransition } from "@/components/page-transition";
 import { prisma } from "@/lib/db/prisma";
 import { formatTimeAgo } from "@/lib/format-time-ago";
+import { getCachetUser, displayNameFor } from "@/lib/cachet";
 import Link from "next/link";
 
 const ACCENT = "#FF1500";
@@ -13,27 +15,34 @@ const tierLabels: Record<string, string> = {
 };
 
 export default async function ExplorePage() {
-  // Intentionally no status/approval filter — every project shows up here,
-  // same as fallout's bulletin board.
   const projects = await prisma.project.findMany({
     include: {
-      user: { select: { firstName: true, lastName: true } },
+      user: {
+        select: { firstName: true, lastName: true, slackUserId: true },
+      },
       tiers: true,
       submissions: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
 
-  // "Most recently updated" = most recent submission if there is one,
-  // otherwise when the project was created.
-  const sorted = projects
-    .map((p) => ({
-      ...p,
-      lastActivityAt: p.submissions[0]?.createdAt ?? p.createdAt,
-    }))
-    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+  const withNames = await Promise.all(
+    projects.map(async (p) => {
+      const cachetUser = await getCachetUser(p.user.slackUserId);
+      return {
+        ...p,
+        lastActivityAt: p.submissions[0]?.createdAt ?? p.createdAt,
+        authorName: displayNameFor(p.user, cachetUser),
+      };
+    })
+  );
+
+  const sorted = withNames.sort(
+    (a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime()
+  );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
+    <PageTransition>
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
       <h1 className="font-display text-4xl md:text-5xl font-extrabold lowercase leading-none mb-3">
         explore<span style={{ color: ACCENT }}>.</span>
       </h1>
@@ -53,17 +62,21 @@ export default async function ExplorePage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {sorted.map((project) => (
-            <div key={project.id} className="border-2 border-[var(--fg)] p-6">
+            <Link
+              key={project.id}
+              href={`/dashboard/explore/${project.id}`}
+              className="block border-2 border-[var(--fg)] p-6 transition-colors hover:bg-[var(--fg)] hover:text-[var(--bg)]"
+            >
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <h2 className="font-display text-lg font-bold">
                     {project.name}
                   </h2>
-                  <p className="text-xs text-[var(--muted)] mt-0.5">
-                    by {project.user.firstName} {project.user.lastName}
+                  <p className="text-xs opacity-60 mt-0.5">
+                    by {project.authorName}
                   </p>
                 </div>
-                <span className="text-xs text-[var(--muted)] shrink-0">
+                <span className="text-xs opacity-60 shrink-0">
                   {formatTimeAgo(project.lastActivityAt)}
                 </span>
               </div>
@@ -85,10 +98,11 @@ export default async function ExplorePage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

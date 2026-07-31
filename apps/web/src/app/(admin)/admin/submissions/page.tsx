@@ -40,6 +40,7 @@ export default async function AdminSubmissionsPage() {
     type: s.type,
     title: s.title,
     description: s.description ?? "",
+    files: s.files,
     status: s.status,
     submittedAt: s.createdAt.toISOString().slice(0, 10),
     commitUrl: s.commitUrl,

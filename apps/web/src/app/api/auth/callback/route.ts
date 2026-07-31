@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
           lastName: hcaUser.family_name || user.lastName,
           avatarUrl: hcaUser.avatar || user.avatarUrl,
           birthday: hcaUser.birthdate ? new Date(hcaUser.birthdate) : user.birthday,
+          slackUserId: hcaUser.slack_id || user.slackUserId,
         },
       })
     } else {
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
           hcaId: hcaUser.sub,
           avatarUrl: hcaUser.avatar,
           birthday: hcaUser.birthdate ? new Date(hcaUser.birthdate) : null,
+          slackUserId: hcaUser.slack_id,
           roles: ["USER"],
         },
       })

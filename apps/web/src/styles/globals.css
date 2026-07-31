@@ -41,3 +41,53 @@ body {
 .animate-page-in {
   animation: page-fade-in 0.25s ease-out;
 }
+
+/* Docs markdown content styling - matches the boxy monochrome brand */
+.docs-content h1,
+.docs-content h2,
+.docs-content h3 {
+  font-family: var(--font-unbounded), sans-serif;
+  font-weight: 700;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+.docs-content h2 { font-size: 1.5rem; }
+.docs-content h3 { font-size: 1.15rem; }
+.docs-content p {
+  margin-bottom: 1em;
+  line-height: 1.7;
+  color: var(--fg);
+}
+.docs-content a {
+  color: var(--fg);
+  text-decoration: underline;
+}
+.docs-content code {
+  border: 2px solid var(--fg);
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
+}
+.docs-content pre {
+  border: 2px solid var(--fg);
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.docs-content pre code {
+  border: none;
+  padding: 0;
+}
+.docs-content ul,
+.docs-content ol {
+  margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+.docs-content li {
+  margin-bottom: 0.4em;
+}
+.docs-content blockquote {
+  border-left: 4px solid #FF1500;
+  padding-left: 1em;
+  color: var(--muted);
+  margin-bottom: 1em;
+}

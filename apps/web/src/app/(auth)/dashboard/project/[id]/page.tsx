@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic"
 
+import { PageTransition } from "@/components/page-transition"
 import { getAuthUser } from "@/lib/auth/get-auth-user"
 import { prisma } from "@/lib/db/prisma"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { EditableProjectHeader } from "@/components/editable-project-header"
+import { DeleteProjectButton } from "@/components/delete-project-button"
 
 const ACCENT = "#FF1500"
 
@@ -28,7 +30,8 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
+    <PageTransition>
+      <div className="max-w-5xl mx-auto px-4 py-12">
       <Link
         href="/dashboard"
         className="text-sm text-[var(--muted)] hover:text-[var(--fg)] transition-colors mb-6 inline-block"
@@ -40,6 +43,7 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
         projectId={project.id}
         initialName={project.name}
         initialDescription={project.description}
+        initialRepoUrl={project.repoUrl}
       />
 
       <div className="space-y-4 mb-12">
@@ -89,8 +93,6 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
             opacity: isLocked ? 0.4 : 1,
           }
 
-          // Locked tiers are intentionally NOT links — nothing exists at
-          // that route yet, so making them clickable was causing a 404.
           if (isLocked) {
             return (
               <div key={tier.id} className={cardClass} style={cardStyle}>
@@ -113,7 +115,7 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
       </div>
 
       {project.submissions.length > 0 && (
-        <div>
+        <div className="mb-12">
           <h2 className="font-display text-xl font-bold mb-4">Submissions</h2>
           <div className="space-y-3">
             {project.submissions.map((sub) => (
@@ -129,8 +131,8 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
                     className="text-xs px-3 py-1 border-2 font-bold uppercase tracking-wide shrink-0"
                     style={{
                       borderColor:
-                        sub.status === "APPROVED" ? ACCENT : "var(--fg)",
-                      color: sub.status === "APPROVED" ? ACCENT : "var(--fg)",
+                        sub.status === "CHANGES_REQUESTED" ? ACCENT : "var(--fg)",
+                      color: sub.status === "CHANGES_REQUESTED" ? ACCENT : "var(--fg)",
                     }}
                   >
                     {sub.status.toLowerCase().replace("_", " ")}
@@ -141,6 +143,11 @@ export default async function ProjectPage(props: { params: Promise<{ id: string 
           </div>
         </div>
       )}
-    </div>
+
+      <div className="border-t-2 pt-6" style={{ borderColor: "var(--muted)" }}>
+        <DeleteProjectButton projectId={project.id} />
+      </div>
+      </div>
+    </PageTransition>
   )
 }

@@ -3,75 +3,139 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
+const ACCENT = "#FF1500"
+
+const STEPS = [
+  {
+    kicker: "welcome",
+    title: "you're in.",
+    body: "hardwire takes you from a digital logic design all the way to real, fabricated silicon. let's show you around before you start.",
+  },
+  {
+    kicker: "explore",
+    title: "see what others are building.",
+    body: "the explore page shows live activity from the whole community — projects, tiers, and what people are shipping right now.",
+  },
+  {
+    kicker: "docs",
+    title: "stuck? docs has you covered.",
+    body: "every tier has a full requirements checklist and guides for what a good submission actually looks like.",
+  },
+  {
+    kicker: "shop",
+    title: "complete a tier, earn real rewards.",
+    body: "finish T1 and unlock an iCE40 FPGA board. keep going and you're on the path to real ASIC fabrication.",
+  },
+]
+
 export default function OnboardingPage() {
   const router = useRouter()
-  const [birthday, setBirthday] = useState("")
-  const [country, setCountry] = useState("")
-  const [discordHandle, setDiscordHandle] = useState("")
-  const [submitting, setSubmitting] = useState(false)
+  const [step, setStep] = useState(0)
+  const [direction, setDirection] = useState(1)
+  const [finishing, setFinishing] = useState(false)
+  const isLastStep = step === STEPS.length - 1
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
+  function goNext() {
+    if (isLastStep) {
+      handleFinish()
+      return
+    }
+    setDirection(1)
+    setStep((s) => s + 1)
+  }
+
+  function goBack() {
+    if (step === 0) return
+    setDirection(-1)
+    setStep((s) => s - 1)
+  }
+
+  async function handleFinish() {
+    setFinishing(true)
     try {
-      await fetch("/api/auth/complete-onboarding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          birthday: birthday || undefined,
-          country,
-          discordHandle,
-        }),
-      })
-      router.push("/dashboard")
-    } finally {
-      setSubmitting(false)
+      const res = await fetch("/api/auth/complete-onboarding", { method: "POST" })
+      if (!res.ok) throw new Error()
+      router.push("/dashboard/new")
+    } catch {
+      // even if this fails, don't trap the user — send them forward and let
+      // the dashboard's own onboardComplete check catch it on next load
+      router.push("/dashboard/new")
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-2">Welcome to Hardwire</h1>
-        <p className="text-muted mb-8">Tell us a bit about yourself</p>
+  const current = STEPS[step]
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium mb-1">Birthday</label>
-            <input
-              type="date"
-              value={birthday}
-              onChange={(e) => setBirthday(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm focus:outline-none focus:border-white/30"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Country</label>
-            <input
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm focus:outline-none focus:border-white/30"
-              placeholder="Where are you based?"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Discord handle</label>
-            <input
-              value={discordHandle}
-              onChange={(e) => setDiscordHandle(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm focus:outline-none focus:border-white/30"
-              placeholder="username#0000"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-white text-black py-3 rounded-xl font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
-          >
-            {submitting ? "Saving..." : "Get started"}
-          </button>
-        </form>
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{ backgroundColor: "#000000", color: "#ffffff" }}
+    >
+      {/* Progress dots */}
+      <div className="flex gap-2 mb-12">
+        {STEPS.map((_, i) => (
+          <div
+            key={i}
+            className="h-1.5 transition-all duration-300"
+            style={{
+              width: i === step ? "32px" : "8px",
+              backgroundColor: i <= step ? ACCENT : "rgba(255,255,255,0.2)",
+            }}
+          />
+        ))}
       </div>
+
+      <div className="w-full max-w-md text-center overflow-hidden">
+        <div
+          key={step}
+          style={{
+            animation: `slide-in-${direction === 1 ? "right" : "left"} 0.35s ease`,
+          }}
+        >
+          <p
+            className="text-xs font-bold uppercase tracking-widest mb-4"
+            style={{ color: ACCENT }}
+          >
+            {current.kicker}
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl font-extrabold lowercase mb-4 leading-tight">
+            {current.title}
+          </h1>
+          <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+            {current.body}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 mt-12 w-full max-w-md">
+        {step > 0 && (
+          <button
+            onClick={goBack}
+            className="px-6 py-3 font-bold border-2 transition-colors"
+            style={{ borderColor: "#ffffff" }}
+          >
+            back
+          </button>
+        )}
+        <button
+          onClick={goNext}
+          disabled={finishing}
+          className="flex-1 py-3 font-bold border-2 transition-colors disabled:opacity-50"
+          style={{ backgroundColor: "#ffffff", color: "#000000", borderColor: "#ffffff" }}
+        >
+          {isLastStep ? (finishing ? "starting..." : "start your first project") : "next"}
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes slide-in-right {
+          from { opacity: 0; transform: translateX(24px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slide-in-left {
+          from { opacity: 0; transform: translateX(-24px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </div>
   )
 }

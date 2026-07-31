@@ -1,8 +1,11 @@
+import { PageTransition } from "@/components/page-transition";
+
 const ACCENT = "#FF1500";
 
 export default function ShopPage() {
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
+    <PageTransition>
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
       <h1 className="font-display text-4xl md:text-5xl font-extrabold lowercase leading-none mb-3">
         shop<span style={{ color: ACCENT }}>.</span>
       </h1>
@@ -19,6 +22,7 @@ export default function ShopPage() {
           Complete a tier to unlock rewards here.
         </p>
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 }

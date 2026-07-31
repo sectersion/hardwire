@@ -11,26 +11,39 @@ const STATUS_LABEL = {
   APPROVED: "approved",
 }
 
-// Checklist config per tier — move this to a shared constants file once you're happy with it
+// Checklist config per tier — must match the scanner's categories in scan-repo.ts
 const TIER_CHECKLIST = {
   T1: [
-    "RTL source files (Verilog/VHDL)",
-    "Testbench included",
-    "Simulation waveform / output attached",
-    "README explains design decisions",
+    { key: "rtl", label: "RTL source files (Verilog/VHDL)" },
+    { key: "testbench", label: "Testbench" },
+    { key: "simulation", label: "Simulation waveform / output" },
+    { key: "readme", label: "README exists" },
   ],
   T2: [
-    "T1 requirements met",
-    "Synthesis report attached",
-    "DRC pass confirmed",
-    "GDSII or equivalent included",
+    { key: "synthesis_report", label: "Synthesis report" },
+    { key: "drc_report", label: "DRC pass report" },
+    { key: "gds", label: "GDSII or equivalent" },
+    { key: "readme", label: "README exists" },
   ],
   T3: [
-    "T2 requirements met",
-    "KiCad source files (.kicad_pro/.kicad_sch/.kicad_pcb)",
-    "BOM in CSV with total cost",
-    "Gerbers included",
+    { key: "kicad_source", label: "KiCad source files" },
+    { key: "bom", label: "BOM (CSV, with total cost)" },
+    { key: "gerbers", label: "Gerbers" },
+    { key: "readme", label: "README exists" },
   ],
+}
+
+// Given a submission's files (Json field, shape: { [category]: {path,url}[] }),
+// compute which checklist items are satisfied. README presence is checked
+// automatically from the repo scan — it's no longer tied to the optional
+// "notes to reviewer" field, since that was never meant to hold the actual
+// design writeup.
+function computeChecklist(tier, submissionFiles) {
+  const items = TIER_CHECKLIST[tier] || []
+  return items.map((item) => {
+    const found = submissionFiles?.[item.key]
+    return { ...item, done: Array.isArray(found) && found.length > 0 }
+  })
 }
 
 function StatusBadge({ status }) {
@@ -55,24 +68,13 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
   const [filter, setFilter] = useState("ALL")
   const [selectedId, setSelectedId] = useState(initialSubmissions[0]?.id)
   const [draftNotes, setDraftNotes] = useState("")
-  const [checkedItems, setCheckedItems] = useState({})
   const [pending, setPending] = useState(false)
 
   const filtered = submissions.filter((s) =>
     filter === "ALL" ? true : s.status === filter
   )
   const selected = submissions.find((s) => s.id === selectedId) || filtered[0]
-  const checklist = selected ? TIER_CHECKLIST[selected.tier] || [] : []
-
-  function toggleCheck(label) {
-    setCheckedItems((prev) => ({
-      ...prev,
-      [selected.id]: {
-        ...(prev[selected.id] || {}),
-        [label]: !prev[selected.id]?.[label],
-      },
-    }))
-  }
+  const checklist = selected ? computeChecklist(selected.tier, selected.files) : []
 
   async function handleDecision(decision) {
     if (!selected) return
@@ -214,24 +216,20 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
               {selected.tier} requirements checklist
             </h3>
             <ul className="mb-8 space-y-2">
-              {checklist.map((label) => {
-                const done = !!checkedItems[selected.id]?.[label]
-                return (
-                  <li key={label} className="flex items-center gap-2 text-sm">
-                    <button
-                      onClick={() => toggleCheck(label)}
-                      className="w-4 h-4 border-2 flex items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{
-                        borderColor: done ? "var(--fg)" : ACCENT,
-                        color: done ? "var(--fg)" : ACCENT,
-                      }}
-                    >
-                      {done ? "✓" : "×"}
-                    </button>
-                    <span style={{ color: done ? "var(--fg)" : ACCENT }}>{label}</span>
-                  </li>
-                )
-              })}
+              {checklist.map((item) => (
+                <li key={item.key} className="flex items-center gap-2 text-sm">
+                  <span
+                    className="w-4 h-4 border-2 flex items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{
+                      borderColor: item.done ? "var(--fg)" : ACCENT,
+                      color: item.done ? "var(--fg)" : ACCENT,
+                    }}
+                  >
+                    {item.done ? "✓" : "×"}
+                  </span>
+                  <span style={{ color: item.done ? "var(--fg)" : ACCENT }}>{item.label}</span>
+                </li>
+              ))}
             </ul>
 
             {selected.reviewerNotes && (
@@ -259,11 +257,16 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
                   style={{ borderColor: "var(--fg)", color: "var(--fg)" }}
                   rows={4}
                 />
+                {checklist.some((c) => !c.done) && (
+                  <p className="text-xs mb-3" style={{ color: "var(--muted)" }}>
+                    heads up — not everything on the checklist was detected. use your judgment.
+                  </p>
+                )}
                 <div className="flex gap-3">
                   <button
                     disabled={pending}
                     onClick={() => handleDecision("APPROVED")}
-                    className="px-6 py-3 font-bold border-2 transition-colors disabled:opacity-50"
+                    className="px-6 py-3 font-bold border-2 transition-colors disabled:opacity-40"
                     style={{ backgroundColor: "var(--fg)", color: "var(--bg)", borderColor: "var(--fg)" }}
                   >
                     {pending ? "saving..." : "approve"}
