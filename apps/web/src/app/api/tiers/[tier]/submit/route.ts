@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth/get-auth-user"
 import { prisma } from "@/lib/db/prisma"
 import { notifyNewSubmission } from "@/lib/slack/notify"
 import { scanRepoForTier } from "@/lib/github/scan-repo"
+import { Prisma } from "@prisma/client"
 
 export async function POST(
   request: NextRequest,
@@ -36,9 +37,11 @@ export async function POST(
     where: { id: body.projectId },
     include: { tiers: { where: { tier: tierUpper as any } } },
   })
+
   if (!project || project.userId !== user.id) {
     return NextResponse.json({ error: "Project not found." }, { status: 404 })
   }
+
   if (!project.repoUrl) {
     return NextResponse.json({ error: "This project has no repo URL set." }, { status: 400 })
   }
@@ -85,7 +88,7 @@ export async function POST(
         type: body.type,
         title,
         description: body.notes || null,
-        files,
+        files: files as unknown as Prisma.InputJsonValue,
         status: "PENDING_REVIEW",
       },
     })
