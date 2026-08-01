@@ -11,6 +11,25 @@ const STATUS_LABEL = {
   APPROVED: "approved",
 }
 
+type Tier = keyof typeof TIER_CHECKLIST
+type Status = keyof typeof STATUS_LABEL
+type SubmissionFiles = Record<string, { path: string; url: string }[]>
+
+type Submission = {
+  id: string
+  tier: Tier
+  type: string
+  submittedAt: string
+  title: string
+  projectName: string
+  user: string
+  status: Status
+  commitUrl?: string
+  description?: string
+  reviewerNotes?: string
+  files: SubmissionFiles
+}
+
 // Checklist config per tier — must match the scanner's categories in scan-repo.ts
 const TIER_CHECKLIST = {
   T1: [
@@ -38,7 +57,7 @@ const TIER_CHECKLIST = {
 // automatically from the repo scan — it's no longer tied to the optional
 // "notes to reviewer" field, since that was never meant to hold the actual
 // design writeup.
-function computeChecklist(tier, submissionFiles) {
+function computeChecklist(tier: Tier, submissionFiles: SubmissionFiles | null | undefined) {
   const items = TIER_CHECKLIST[tier] || []
   return items.map((item) => {
     const found = submissionFiles?.[item.key]
@@ -46,7 +65,7 @@ function computeChecklist(tier, submissionFiles) {
   })
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({ status }: { status: Status }) {
   const isAccent = status === "CHANGES_REQUESTED"
   return (
     <span
@@ -61,11 +80,17 @@ function StatusBadge({ status }) {
   )
 }
 
-export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
+export function ReviewerDashboardClient({
+  initialSubmissions,
+  reviewerId,
+}: {
+  initialSubmissions: Submission[]
+  reviewerId: string
+}) {
   const [theme] = useState("dark")
   const isDark = theme === "dark"
-  const [submissions, setSubmissions] = useState(initialSubmissions)
-  const [filter, setFilter] = useState("ALL")
+  const [submissions, setSubmissions] = useState<Submission[]>(initialSubmissions)
+  const [filter, setFilter] = useState<"ALL" | Status>("ALL")
   const [selectedId, setSelectedId] = useState(initialSubmissions[0]?.id)
   const [draftNotes, setDraftNotes] = useState("")
   const [pending, setPending] = useState(false)
@@ -76,7 +101,7 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
   const selected = submissions.find((s) => s.id === selectedId) || filtered[0]
   const checklist = selected ? computeChecklist(selected.tier, selected.files) : []
 
-  async function handleDecision(decision) {
+  async function handleDecision(decision: Extract<Status, "APPROVED" | "CHANGES_REQUESTED">) {
     if (!selected) return
     setPending(true)
     try {
@@ -99,12 +124,14 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
     }
   }
 
-  const counts = {
+  const counts: Record<"ALL" | Status, number> = {
     ALL: submissions.length,
     PENDING_REVIEW: submissions.filter((s) => s.status === "PENDING_REVIEW").length,
     APPROVED: submissions.filter((s) => s.status === "APPROVED").length,
     CHANGES_REQUESTED: submissions.filter((s) => s.status === "CHANGES_REQUESTED").length,
   }
+
+  const filterOptions: ("ALL" | Status)[] = ["ALL", "PENDING_REVIEW", "APPROVED", "CHANGES_REQUESTED"]
 
   return (
     <div
@@ -114,7 +141,7 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
         "--muted": isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)",
         backgroundColor: "var(--bg)",
         color: "var(--fg)",
-      }}
+      } as React.CSSProperties}
       className="min-h-screen font-body"
     >
       <header
@@ -133,7 +160,7 @@ export function ReviewerDashboardClient({ initialSubmissions, reviewerId }) {
         {/* Submission list */}
         <div className="border-r-2" style={{ borderColor: "var(--fg)" }}>
           <div className="flex border-b-2" style={{ borderColor: "var(--fg)" }}>
-            {["ALL", "PENDING_REVIEW", "APPROVED", "CHANGES_REQUESTED"].map((f) => (
+            {filterOptions.map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
