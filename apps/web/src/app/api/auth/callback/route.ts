@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")
   const state = request.nextUrl.searchParams.get("state")
   if (!code || !state) {
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.redirect(new URL("/", process.env.APP_URL || request.url))
   }
   const stateData = verifyStateToken(state)
   if (!stateData) {
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.redirect(new URL("/", process.env.APP_URL || request.url))
   }
   try {
     const tokens = await exchangeCode(code)
@@ -87,9 +87,9 @@ export async function GET(request: NextRequest) {
       path: "/",
     })
     const redirectTarget = user.onboardComplete ? stateData.redirect : "/onboarding"
-    return NextResponse.redirect(new URL(redirectTarget, request.url))
+    return NextResponse.redirect(new URL(redirectTarget, process.env.APP_URL || request.url))
   } catch (error) {
     console.error("Auth callback error:", error)
-    return NextResponse.redirect(new URL("/?error=auth_failed", request.url))
+    return NextResponse.redirect(new URL("/?error=auth_failed", process.env.APP_URL || request.url))
   }
 }
