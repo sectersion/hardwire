@@ -24,10 +24,10 @@ type Submission = {
   projectName: string
   user: string
   status: Status
-  commitUrl?: string
+  commitUrl?: string | null
   description?: string
   reviewerNotes?: string
-  files: SubmissionFiles
+  files: unknown
 }
 
 // Checklist config per tier — must match the scanner's categories in scan-repo.ts
@@ -57,10 +57,11 @@ const TIER_CHECKLIST = {
 // automatically from the repo scan — it's no longer tied to the optional
 // "notes to reviewer" field, since that was never meant to hold the actual
 // design writeup.
-function computeChecklist(tier: Tier, submissionFiles: SubmissionFiles | null | undefined) {
+function computeChecklist(tier: Tier, submissionFiles: unknown) {
+  const files = submissionFiles as SubmissionFiles | null | undefined
   const items = TIER_CHECKLIST[tier] || []
   return items.map((item) => {
-    const found = submissionFiles?.[item.key]
+    const found = files?.[item.key]
     return { ...item, done: Array.isArray(found) && found.length > 0 }
   })
 }
