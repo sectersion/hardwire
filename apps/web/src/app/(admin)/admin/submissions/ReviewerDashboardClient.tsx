@@ -24,7 +24,7 @@ type Submission = {
   projectName: string
   user: string
   status: Status
-  commitUrl?: string
+  commitUrl?: string | null
   description?: string
   reviewerNotes?: string
   files: SubmissionFiles
