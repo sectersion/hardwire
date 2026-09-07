@@ -1,0 +1,67 @@
+[
+  {
+    "id": "rtl",
+    "term": "RTL",
+    "definition": "The code that describes how a chip's logic behaves — think of it as the blueprint before anything physical exists. For Hardwire T1 submissions, this is your Verilog or VHDL source."
+  },
+  {
+    "id": "testbench",
+    "term": "Testbench",
+    "definition": "A separate piece of code that pushes inputs into your design and checks the outputs are correct. It is how you prove your RTL actually works before anyone turns it into silicon."
+  },
+  {
+    "id": "simulation-waveform",
+    "term": "Simulation waveform",
+    "definition": "A visual trace of your signals over time that helps you see whether your design behaves the way you intended. For Hardwire submissions, it is the evidence that your simulation ran and passed the checks you care about."
+  },
+  {
+    "id": "synthesis-report",
+    "term": "Synthesis report",
+    "definition": "A summary produced when your RTL is translated into a lower-level circuit description. It tells you whether the logic mapped cleanly and highlights any issues that might matter before tapeout."
+  },
+  {
+    "id": "drc",
+    "term": "DRC",
+    "definition": "Design Rule Checking is the automated review that verifies your layout follows the foundry's manufacturing rules. It is one of the key checks that keeps a submission from failing when it is actually built."
+  },
+  {
+    "id": "gdsii",
+    "term": "GDSII",
+    "definition": "The standard file format for the final chip layout geometry that is handed off for fabrication. In Hardwire, this is the file that represents the completed physical design."
+  },
+  {
+    "id": "kicad",
+    "term": "KiCad",
+    "definition": "A free electronic design automation tool for creating schematics and PCB layouts. For Hardwire submissions, it is the common environment people use to author circuit board work."
+  },
+  {
+    "id": "bom",
+    "term": "BOM",
+    "definition": "The bill of materials is the list of every part and quantity needed to build the board or assembly. For Hardwire submissions, it helps reviewers understand what is required to actually manufacture the design."
+  },
+  {
+    "id": "gerbers",
+    "term": "Gerbers",
+    "definition": "The manufacturing files that describe each copper layer and drill layer of a PCB. They are what the fab uses to produce the physical board from your design files."
+  },
+  {
+    "id": "design",
+    "term": "Design",
+    "definition": "A submission type for a hardware design artifact, typically the main implementation you want reviewed. In Hardwire, this is the core deliverable for a submission that is meant to be evaluated as a design."
+  },
+  {
+    "id": "simulation",
+    "term": "Simulation",
+    "definition": "A submission type for work that focuses on proving behavior through test and verification rather than physical fabrication. In Hardwire, this usually means your validation artifacts and evidence."
+  },
+  {
+    "id": "gds",
+    "term": "GDS",
+    "definition": "A submission type for completed layout data that is ready to be handed off for manufacturing. In Hardwire, this is the type used when the output is the physical implementation package."
+  },
+  {
+    "id": "pcb",
+    "term": "PCB",
+    "definition": "A submission type for printed circuit board work, including schematics, layout, and supporting manufacturing files. In Hardwire, this is the category for board-level deliverables."
+  }
+]

@@ -92,17 +92,6 @@ export function DashboardNav({ showAdminLink = false }: { showAdminLink?: boolea
             </li>
           );
         })}
-        {showAdminLink && (
-          <li>
-            <Link
-              href="/admin"
-              className="text-xs font-bold uppercase tracking-widest whitespace-nowrap"
-              style={{ color: ACCENT }}
-            >
-              admin
-            </Link>
-          </li>
-        )}
       </ul>
     </header>
   );

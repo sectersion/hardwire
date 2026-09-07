@@ -75,6 +75,12 @@ export function getDocsTree(): { tree: DocNode[]; flatMap: Map<string, string> }
   return { tree, flatMap }
 }
 
+function prepareDocContent(content: string): string {
+  return content.replace(/<Term\s+id="([^"]+)">([\s\S]*?)<\/Term>/g, (_match, id, inner) => {
+    return `<button type="button" class="glossary-term" data-glossary-id="${id}" tabindex="0" aria-label="Open glossary for ${id}">${inner}</button>`
+  })
+}
+
 export function getDocBySlug(slugArray: string[]): { title: string; html: string } | null {
   const { flatMap } = getDocsTree()
   const fsPath = flatMap.get(slugArray.join("/"))
@@ -83,7 +89,7 @@ export function getDocBySlug(slugArray: string[]): { title: string; html: string
   const raw = fs.readFileSync(fsPath, "utf-8")
   const { data, content } = matter(raw)
   const title = data.title || toTitle(cleanName(path.basename(fsPath, ".md")))
-  const html = marked.parse(content) as string
+  const html = marked.parse(prepareDocContent(content)) as string
 
   return { title, html }
 }

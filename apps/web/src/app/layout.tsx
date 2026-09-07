@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { Unbounded, DM_Sans } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import { GlossaryPanel } from "@/components/glossary-panel"
+import { GlossaryProvider } from "@/components/glossary-provider"
 import "@/styles/globals.css"
 
 const unbounded = Unbounded({
@@ -24,7 +26,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-theme="dark">
       <body className={`min-h-screen antialiased ${unbounded.variable} ${dmSans.variable}`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <GlossaryProvider>
+            {children}
+            <GlossaryPanel />
+          </GlossaryProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
