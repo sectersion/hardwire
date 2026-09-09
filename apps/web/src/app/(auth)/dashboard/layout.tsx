@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }) {
   const user = await getAuthUser();
   const cachetUser = await getCachetUser(user.slackUserId);
-  const isAdmin = user.role === "ADMIN"; // placeholder — send roles.ts and I'll correct this
+  const isAdmin = user.roles.includes("SUPERADMIN" as any) || user.roles.includes("ADMIN" as any);
 
   return (
     <div

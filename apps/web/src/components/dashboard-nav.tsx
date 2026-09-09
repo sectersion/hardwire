@@ -7,7 +7,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getAuthUser();
-  const isAdmin = user.role === "ADMIN"; // placeholder — see below
+  const isAdmin = user.roles.includes("SUPERADMIN" as any) || user.roles.includes("ADMIN" as any);
 
   return (
     <div
