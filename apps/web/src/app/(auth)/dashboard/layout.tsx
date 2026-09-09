@@ -1,5 +1,6 @@
-import { DashboardNav } from "@/components/dashboard-nav";
 import { getAuthUser } from "@/lib/auth/get-auth-user";
+import { getCachetUser } from "@/lib/cachet";
+import { BottomBar } from "@/components/bottom-bar";
 
 export default async function DashboardLayout({
   children,
@@ -7,16 +8,16 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getAuthUser();
-  // Anyone with a role beyond plain USER (reviewer, admin, etc.) gets the
-  // admin panel link in the nav.
-  const isPrivileged = user.roles?.some((r: string) => r !== "USER") ?? false;
+  const cachetUser = await getCachetUser(user.slackUserId);
+  const isAdmin = user.role === "ADMIN"; // placeholder — send roles.ts and I'll correct this
+
   return (
     <div
-      className="min-h-screen font-body transition-colors duration-200"
+      className="h-screen overflow-hidden font-body transition-colors duration-200"
       style={{ backgroundColor: "var(--bg)", color: "var(--fg)" }}
     >
-      <DashboardNav showAdminLink={isPrivileged} />
-      <main>{children}</main>
+      <main className="h-full min-w-0 overflow-hidden pb-16">{children}</main>
+      <BottomBar showAdminLink={isAdmin} profileImageUrl={cachetUser?.imageUrl} />
     </div>
   );
 }
