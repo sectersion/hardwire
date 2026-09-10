@@ -10,19 +10,19 @@ const tiers = [
   {
     id: "T1",
     title: "Digital Logic",
-    description: "Design and simulate a digital logic circuit",
+    description: "Design a small digital circuit and prove it works in simulation. No hardware experience required.",
     reward: "iCE40 FPGA Board",
   },
   {
     id: "T2",
     title: "ASIC Tapeout",
-    description: "Complete synthesis and DRC pass for ASIC fabrication",
+    description: "Turn your circuit into a real chip design and send it to an actual chip factory. A few weeks later, a chip with your design on it comes back in the mail.",
     reward: "ASIC Shuttle Slot",
   },
   {
     id: "T3",
     title: "Custom Carrier Board",
-    description: "Design a custom PCB to carry your ASIC",
+    description: "Design the circuit board that holds and powers your chip so it can actually be plugged in and used.",
     reward: "PCB Fab & Test Components",
   },
 ];
@@ -84,8 +84,8 @@ export default function LandingPage() {
               className="text-lg font-medium max-w-2xl mx-auto mb-8"
               style={{ color: "var(--muted)" }}
             >
-              Ship a validated design. We fabricate and ship your custom
-              hardware — from digital logic to a working ASIC.
+              Design a chip. We send it to a real fab and mail you back the
+              finished part.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <button
@@ -111,8 +111,9 @@ export default function LandingPage() {
 
           {/* Tiers */}
           <section className="max-w-6xl mx-auto px-4 py-16">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-center mb-12">
-              Engineering Progression
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-center mb-12 lowercase">
+              three steps. one real chip
+              <span style={{ color: ACCENT }}>.</span>
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {tiers.map((tier) => (
@@ -155,13 +156,14 @@ export default function LandingPage() {
 
           {/* Powered by Hack Club */}
           <section className="max-w-3xl mx-auto px-4 py-16 text-center">
-            <h2 className="font-display text-3xl font-bold mb-6">
-              Powered by Hack Club
+            <h2 className="font-display text-3xl font-bold mb-6 lowercase">
+              built by hack club
+              <span style={{ color: ACCENT }}>.</span>
             </h2>
             <p className="mb-8" style={{ color: "var(--muted)" }}>
-              Hardwire is a 501(c)(3) nonprofit program dedicated to making
-              high-end hardware engineering accessible to every teen
-              worldwide.
+              Hack Club is a 501(c)(3) nonprofit run by teenagers, for
+              teenagers. Hardwire is free because we think you shouldn&apos;t
+              have to pay to learn how hardware actually gets made.
             </p>
             <button
               onClick={signInWithHackClub}
