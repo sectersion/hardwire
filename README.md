@@ -1,34 +1,19 @@
-# hardwire
-![Eligibility](https://img.shields.io/badge/Ages-13--18-2D3436?style=for-the-badge)
+Sign in with Hack Club
+Ages 13–18
 
-**From logic to silicon.**
+**logic to silicon.**
+Design a chip. We send it to a real fab and mail you back the finished part.
 
-## About
-**Hardwire** is a high-intensity silicon YSWS designed to bridge the gap between abstract code and physical hardware. Many people think chipmaking is out of reach, we disagree. We guide the next generation of engineers through the entire semiconductor pipeline.
+[Get started] · [Learn more](https://hardwire-prod.vercel.app/resources)
 
-## The YSWS Pipeline
-Hardwire operates on a "You Ship, We Ship" model, but with a rigorous engineering standard. You "ship" a validated design, and through the support of **Hack Club**, we facilitate the fabrication and shipping of your custom hardware. This is not just a project; it is an end-to-end immersion into the semiconductor manufacturing process.
+## three steps. one real chip.
 
-## Who is this for?
-Hardwire is designed for aspiring hardware engineers and hackers aged **13–18** globally. 
+| | T1: Digital Logic | T2: ASIC Tapeout | T3: Custom Carrier Board |
+|---|---|---|---|
+| **Do** | Design a small digital circuit and prove it in simulation | Turn your circuit into a real chip design and send it to fabrication | Design the board that holds and powers your chip |
+| **Reward** | iCE40 FPGA Board | ASIC Shuttle Slot | PCB Fab & Test Components |
 
-**This program is for you if:**
-*   You are ready to move beyond software and want to understand how physical transistors actually execute your code.
-*   You are prepared to commit to a multi-stage engineering cycle, including rigorous simulation, verification, and hardware bring-up.
-*   You want to join a community of builders who are designing the future of open-source silicon.
+## built by hack club.
+Free, because you shouldn't have to pay to learn how hardware actually gets made.
 
-*Note: No prior silicon experience is required, but you must be ready to learn by doing. We provide the mentorship, the toolchains, and the resources; you bring the curiosity and the dedication to see a design through to completion.*
-
----
-
-## Engineering Progression
-| Tier | Focus | Requirement | Reward |
-| :--- | :--- | :--- | :--- |
-| **T1** | Digital Logic | Logic Design & Simulation | iCE40 FPGA Board |
-| **T2** | ASIC Tapeout | Synthesis & DRC Pass | ASIC Shuttle Slot |
-| **T3** | Custom Carrier Board | Custom PCB Design | PCB Fab & Test Components |
-
----
-
-## About Hack Club
-Hardwire is powered by **Hack Club**, a 501(c)(3) nonprofit dedicated to making high-end hardware engineering accessible to every teen worldwide. 
+Join the program — a project by [hack club](https://hackclub.com/)
