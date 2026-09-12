@@ -1,4 +1,5 @@
-![Hardwire](apps/web/public/logo/hardwire-general.svg)
+![Hardwire](apps/web/public/logo/hardwire-general.png)
+
 Hardwire - from Hack Club
 Ages 13–18
 
