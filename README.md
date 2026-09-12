@@ -1,10 +1,11 @@
-Sign in with Hack Club
+![Hardwire](apps/web/public/logo/hardwire-general.svg)
+Hardwire - from Hack Club
 Ages 13–18
 
 **logic to silicon.**
 Design a chip. We send it to a real fab and mail you back the finished part.
 
-[Get started] · [Learn more](https://hardwire-prod.vercel.app/resources)
+[Get started](https://hardwire-prod.vercel.app/) · [Learn more](https://hardwire-prod.vercel.app/dashboard/docs/getting-started/welcome)
 
 ## three steps. one real chip.
 
