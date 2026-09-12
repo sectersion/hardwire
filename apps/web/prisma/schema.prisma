@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -38,12 +39,39 @@ enum SubStatus {
   PENDING_REVIEW
   CHANGES_REQUESTED
   APPROVED
+  REJECTED
 }
 
 enum ShipStatus {
   PREPARING
   SHIPPED
   DELIVERED
+}
+
+// Actions this covers: perma-reject, undo-reject, ban, restore, soft
+// delete, restore project. actorId is nullable so a log entry can
+// survive even if the acting admin's User row is later deleted.
+enum AuditAction {
+  SUBMISSION_REJECTED
+  SUBMISSION_REJECT_UNDONE
+  USER_BANNED
+  USER_RESTORED
+  PROJECT_DELETED
+  PROJECT_RESTORED
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  action     AuditAction
+  actorId    String?
+  actor      User?       @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetType String // "Submission" | "Project" | "User"
+  targetId   String
+  reason     String?
+  createdAt  DateTime    @default(now())
+
+  @@index([targetType, targetId])
+  @@index([actorId])
 }
 
 model User {
@@ -62,6 +90,8 @@ model User {
   roles           Role[]
   onboardComplete Boolean   @default(false)
   banned          Boolean   @default(false)
+  bannedAt        DateTime?
+  bannedBy        String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -70,6 +100,7 @@ model User {
   tiers       TierProgress[]
   submissions Submission[]
   shipments   Shipment[]
+  auditLogs   AuditLog[]     @relation("AuditActor")
 }
 
 model UserSession {
@@ -83,15 +114,24 @@ model UserSession {
 }
 
 model Project {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String
   description String?
   repoUrl     String?
-  currentTier Tier     @default(T1)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  currentTier Tier      @default(T1)
+  // Set when a submission on this project is perma-rejected. Hidden
+  // projects are excluded from the dashboard project list and can't
+  // receive new submissions. Reversed only by undoReject (admin-gated).
+  hidden      Boolean   @default(false)
+  hiddenAt    DateTime?
+  hiddenBy    String?
+  // Soft delete — admin-gated. Excluded from all normal queries once
+  // set; restore just clears it back to null.
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   tiers       TierProgress[]
   submissions Submission[]

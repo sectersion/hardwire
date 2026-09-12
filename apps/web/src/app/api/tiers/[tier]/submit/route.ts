@@ -42,6 +42,16 @@ export async function POST(
     return NextResponse.json({ error: "Project not found." }, { status: 404 })
   }
 
+  // Perma-rejected projects are hidden and can't accept new submissions,
+  // regardless of tier or progress state. Only an admin's undoReject
+  // action clears this.
+  if (project.hidden) {
+    return NextResponse.json(
+      { error: "This project has been permanently rejected and can no longer accept submissions." },
+      { status: 403 }
+    )
+  }
+
   if (!project.repoUrl) {
     return NextResponse.json({ error: "This project has no repo URL set." }, { status: 400 })
   }

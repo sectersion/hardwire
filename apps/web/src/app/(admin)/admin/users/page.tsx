@@ -6,6 +6,7 @@ import { UnauthorizedError, ForbiddenError } from "@/lib/auth/get-auth-user"
 import { redirect } from "next/navigation"
 import { UserSearch } from "./UserSearch"
 import { UserRoleEditor } from "./UserRoleEditor"
+import { UserBanControl } from "./UserBanControl"
 import { getCachetUser, displayNameFor } from "@/lib/cachet"
 
 const ACCENT = "#FF1500"
@@ -93,6 +94,7 @@ export default async function AdminUsersPage({
                 <span>{user._count.projects} projects</span>
                 <span>{user._count.submissions} submissions</span>
                 <UserRoleEditor userId={user.id} initialRoles={user.roles} />
+                <UserBanControl userId={user.id} initialBanned={user.banned} />
               </div>
             </div>
           </div>

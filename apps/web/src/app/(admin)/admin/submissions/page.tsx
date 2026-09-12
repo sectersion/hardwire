@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db/prisma"
 import { ReviewerDashboardClient } from "./ReviewerDashboardClient"
 import { requireReviewer } from "@/lib/auth/require-reviewer"
-import { UnauthorizedError, ForbiddenError } from "@/lib/auth/get-auth-user"
+import { getAuthUser, UnauthorizedError, ForbiddenError } from "@/lib/auth/get-auth-user"
 import { redirect } from "next/navigation"
+import { Role } from "shared"
+import { hasRole } from "@/lib/auth/roles"
 
 export default async function AdminSubmissionsPage() {
   let reviewer
@@ -17,6 +19,12 @@ export default async function AdminSubmissionsPage() {
     }
     throw err
   }
+
+  // Same cast rationale as dashboard/layout.tsx: user.roles is
+  // Prisma's generated Role enum, structurally identical to shared's
+  // Role enum but a distinct nominal TS type.
+  const authUser = await getAuthUser()
+  const isAdmin = hasRole(authUser.roles as unknown as Role[], Role.ADMIN)
 
   const submissions = await prisma.submission.findMany({
     orderBy: { createdAt: "desc" },
@@ -51,6 +59,7 @@ export default async function AdminSubmissionsPage() {
     <ReviewerDashboardClient
       initialSubmissions={formatted}
       reviewerId={reviewerId}
+      isAdmin={isAdmin}
     />
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { reviewSubmission } from "@/lib/actions/submissions" // adjust path to match where you save submissions-actions.ts
+import { reviewSubmission, rejectSubmission, undoReject } from "@/lib/actions/submissions" // adjust path to match where you save submissions-actions.ts
 
 const ACCENT = "#FF1500"
 
@@ -9,6 +9,7 @@ const STATUS_LABEL = {
   PENDING_REVIEW: "pending review",
   CHANGES_REQUESTED: "changes requested",
   APPROVED: "approved",
+  REJECTED: "rejected",
 }
 
 type Tier = keyof typeof TIER_CHECKLIST
@@ -67,7 +68,7 @@ function computeChecklist(tier: Tier, submissionFiles: unknown) {
 }
 
 function StatusBadge({ status }: { status: Status }) {
-  const isAccent = status === "CHANGES_REQUESTED"
+  const isAccent = status === "CHANGES_REQUESTED" || status === "REJECTED"
   return (
     <span
       className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold uppercase tracking-widest border-2"
@@ -84,9 +85,11 @@ function StatusBadge({ status }: { status: Status }) {
 export function ReviewerDashboardClient({
   initialSubmissions,
   reviewerId,
+  isAdmin,
 }: {
   initialSubmissions: Submission[]
   reviewerId: string
+  isAdmin: boolean
 }) {
   const [theme] = useState("dark")
   const isDark = theme === "dark"
@@ -95,6 +98,10 @@ export function ReviewerDashboardClient({
   const [selectedId, setSelectedId] = useState(initialSubmissions[0]?.id)
   const [draftNotes, setDraftNotes] = useState("")
   const [pending, setPending] = useState(false)
+  const [confirmingReject, setConfirmingReject] = useState(false)
+  const [rejectError, setRejectError] = useState<string | null>(null)
+  const [undoPending, setUndoPending] = useState(false)
+  const [undoError, setUndoError] = useState<string | null>(null)
 
   const filtered = submissions.filter((s) =>
     filter === "ALL" ? true : s.status === filter
@@ -125,14 +132,85 @@ export function ReviewerDashboardClient({
     }
   }
 
+  // Reject is permanent (hides the whole project, blocks resubmission,
+  // only undoable by an admin), so it goes through a confirm step
+  // instead of firing on a single click like approve/request-changes.
+  async function handleReject() {
+    if (!selected) return
+    setRejectError(null)
+
+    if (!draftNotes.trim()) {
+      setRejectError("A reason is required to reject.")
+      return
+    }
+
+    if (!confirmingReject) {
+      setConfirmingReject(true)
+      return
+    }
+
+    setPending(true)
+    try {
+      await rejectSubmission({
+        submissionId: selected.id,
+        reason: draftNotes,
+        reviewerId,
+      })
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.id === selected.id
+            ? { ...s, status: "REJECTED", reviewerNotes: draftNotes }
+            : s
+        )
+      )
+      setDraftNotes("")
+      setConfirmingReject(false)
+    } catch (err) {
+      setRejectError(err instanceof Error ? err.message : "Failed to reject")
+      setConfirmingReject(false)
+    } finally {
+      setPending(false)
+    }
+  }
+
+  function selectSubmission(id: string) {
+    setSelectedId(id)
+    setDraftNotes("")
+    setConfirmingReject(false)
+    setRejectError(null)
+    setUndoError(null)
+  }
+
+  // Admin-only — button that calls this is only rendered when isAdmin
+  // is true, but undoReject itself also enforces requireSuperadmin()
+  // server-side regardless.
+  async function handleUndoReject() {
+    if (!selected) return
+    setUndoPending(true)
+    setUndoError(null)
+    try {
+      await undoReject({ submissionId: selected.id, adminId: reviewerId })
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.id === selected.id ? { ...s, status: "PENDING_REVIEW" } : s
+        )
+      )
+    } catch (err) {
+      setUndoError(err instanceof Error ? err.message : "Failed to undo reject")
+    } finally {
+      setUndoPending(false)
+    }
+  }
+
   const counts: Record<"ALL" | Status, number> = {
     ALL: submissions.length,
     PENDING_REVIEW: submissions.filter((s) => s.status === "PENDING_REVIEW").length,
     APPROVED: submissions.filter((s) => s.status === "APPROVED").length,
     CHANGES_REQUESTED: submissions.filter((s) => s.status === "CHANGES_REQUESTED").length,
+    REJECTED: submissions.filter((s) => s.status === "REJECTED").length,
   }
 
-  const filterOptions: ("ALL" | Status)[] = ["ALL", "PENDING_REVIEW", "APPROVED", "CHANGES_REQUESTED"]
+  const filterOptions: ("ALL" | Status)[] = ["ALL", "PENDING_REVIEW", "APPROVED", "CHANGES_REQUESTED", "REJECTED"]
 
   return (
     <div
@@ -181,10 +259,7 @@ export function ReviewerDashboardClient({
             {filtered.map((s) => (
               <button
                 key={s.id}
-                onClick={() => {
-                  setSelectedId(s.id)
-                  setDraftNotes("")
-                }}
+                onClick={() => selectSubmission(s.id)}
                 className="w-full text-left p-4 border-b-2 transition-colors"
                 style={{
                   borderColor: "var(--fg)",
@@ -272,6 +347,32 @@ export function ReviewerDashboardClient({
               </div>
             )}
 
+            {selected.status === "REJECTED" && (
+              <div>
+                {isAdmin ? (
+                  <>
+                    <button
+                      disabled={undoPending}
+                      onClick={handleUndoReject}
+                      className="px-6 py-3 font-bold border-2 transition-colors disabled:opacity-50"
+                      style={{ borderColor: "var(--fg)", color: "var(--fg)" }}
+                    >
+                      {undoPending ? "restoring..." : "undo reject"}
+                    </button>
+                    {undoError && (
+                      <p className="text-xs mt-3" style={{ color: ACCENT }}>
+                        {undoError}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs uppercase tracking-widest" style={{ color: "var(--muted)" }}>
+                    only an admin can undo a rejection
+                  </p>
+                )}
+              </div>
+            )}
+
             {selected.status === "PENDING_REVIEW" && (
               <div>
                 <h3 className="font-display text-sm font-bold uppercase tracking-widest mb-3">
@@ -279,7 +380,11 @@ export function ReviewerDashboardClient({
                 </h3>
                 <textarea
                   value={draftNotes}
-                  onChange={(e) => setDraftNotes(e.target.value)}
+                  onChange={(e) => {
+                    setDraftNotes(e.target.value)
+                    setConfirmingReject(false)
+                    setRejectError(null)
+                  }}
                   placeholder="explain what's missing, or why this is approved..."
                   className="w-full p-3 mb-4 text-sm border-2 bg-transparent resize-none"
                   style={{ borderColor: "var(--fg)", color: "var(--fg)" }}
@@ -290,7 +395,7 @@ export function ReviewerDashboardClient({
                     heads up — not everything on the checklist was detected. use your judgment.
                   </p>
                 )}
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap items-center">
                   <button
                     disabled={pending}
                     onClick={() => handleDecision("APPROVED")}
@@ -307,7 +412,38 @@ export function ReviewerDashboardClient({
                   >
                     {pending ? "saving..." : "request changes"}
                   </button>
+                  <button
+                    disabled={pending}
+                    onClick={handleReject}
+                    className="px-6 py-3 font-bold border-2 transition-colors disabled:opacity-50"
+                    style={{
+                      borderColor: ACCENT,
+                      color: confirmingReject ? "var(--bg)" : ACCENT,
+                      backgroundColor: confirmingReject ? ACCENT : "transparent",
+                    }}
+                  >
+                    {pending
+                      ? "rejecting..."
+                      : confirmingReject
+                        ? "click again to confirm"
+                        : "reject (permanent)"}
+                  </button>
+                  {confirmingReject && (
+                    <button
+                      disabled={pending}
+                      onClick={() => setConfirmingReject(false)}
+                      className="px-4 py-3 text-xs font-bold uppercase tracking-widest"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      cancel
+                    </button>
+                  )}
                 </div>
+                {rejectError && (
+                  <p className="text-xs mt-3" style={{ color: ACCENT }}>
+                    {rejectError}
+                  </p>
+                )}
               </div>
             )}
           </div>

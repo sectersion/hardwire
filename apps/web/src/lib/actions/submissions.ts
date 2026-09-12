@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/db/prisma"
 import { revalidatePath } from "next/cache"
+import { requireReviewer } from "@/lib/auth/require-reviewer"
+import { requireSuperadmin } from "@/lib/auth/require-superadmin"
 
 type Decision = "APPROVED" | "CHANGES_REQUESTED"
 
@@ -67,5 +69,100 @@ export async function reviewSubmission({
   }
 
   revalidatePath("/admin/submissions")
+  revalidatePath(`/dashboard/project/${submission.projectId}`)
+}
+
+// Perma-reject. Gated the same way as approve/request-changes — any
+// reviewer can do this, not admin-only (only the undo is admin-gated).
+// If that assumption is wrong and reject itself should be admin-only,
+// swap requireReviewer() for requireSuperadmin() here.
+export async function rejectSubmission({
+  submissionId,
+  reason,
+  reviewerId,
+}: {
+  submissionId: string
+  reason: string
+  reviewerId: string
+}) {
+  await requireReviewer()
+
+  if (!reason.trim()) {
+    throw new Error("A reason is required to reject a submission.")
+  }
+
+  const submission = await prisma.submission.update({
+    where: { id: submissionId },
+    data: {
+      status: "REJECTED",
+      reviewerNotes: reason,
+      reviewedBy: reviewerId,
+      reviewedAt: new Date(),
+    },
+  })
+
+  await prisma.project.update({
+    where: { id: submission.projectId },
+    data: {
+      hidden: true,
+      hiddenAt: new Date(),
+      hiddenBy: reviewerId,
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: "SUBMISSION_REJECTED",
+      actorId: reviewerId,
+      targetType: "Submission",
+      targetId: submission.id,
+      reason,
+    },
+  })
+
+  revalidatePath("/admin/submissions")
+  revalidatePath("/dashboard")
+  revalidatePath(`/dashboard/project/${submission.projectId}`)
+}
+
+// Undo a perma-reject. Admin-only, unlike the reject itself.
+export async function undoReject({
+  submissionId,
+  adminId,
+}: {
+  submissionId: string
+  adminId: string
+}) {
+  await requireSuperadmin()
+
+  const submission = await prisma.submission.update({
+    where: { id: submissionId },
+    data: {
+      status: "PENDING_REVIEW",
+      reviewedBy: null,
+      reviewedAt: null,
+    },
+  })
+
+  await prisma.project.update({
+    where: { id: submission.projectId },
+    data: {
+      hidden: false,
+      hiddenAt: null,
+      hiddenBy: null,
+    },
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: "SUBMISSION_REJECT_UNDONE",
+      actorId: adminId,
+      targetType: "Submission",
+      targetId: submission.id,
+    },
+  })
+
+  revalidatePath("/admin/submissions")
+  revalidatePath("/dashboard")
   revalidatePath(`/dashboard/project/${submission.projectId}`)
 }
